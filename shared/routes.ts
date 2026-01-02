@@ -25,13 +25,15 @@ export const api = {
       responses: {
         200: z.object({
           summary: z.string(),
+          country: z.string().optional(),
+          cityImage: z.string().nullable(),
           coordinates: z.object({ lat: z.number(), lon: z.number() }),
           weather: z.any(),
           attractions: z.array(z.object({
             name: z.string(),
             description: z.string(),
             rating: z.number().optional(),
-            image: z.string().optional(),
+            image: z.string().nullable(),
           })),
         }),
       },
