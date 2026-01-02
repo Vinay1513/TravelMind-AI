@@ -1,38 +1,39 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { itineraries, messages, type InsertItinerary, type InsertMessage, type Itinerary, type Message } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getItineraries(): Promise<Itinerary[]>;
+  getItinerary(id: number): Promise<Itinerary | undefined>;
+  createItinerary(itinerary: InsertItinerary): Promise<Itinerary>;
+  
+  getMessages(): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getItineraries(): Promise<Itinerary[]> {
+    return await db.select().from(itineraries).orderBy(desc(itineraries.createdAt));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getItinerary(id: number): Promise<Itinerary | undefined> {
+    const [itinerary] = await db.select().from(itineraries).where(eq(itineraries.id, id));
+    return itinerary;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createItinerary(insertItinerary: InsertItinerary): Promise<Itinerary> {
+    const [itinerary] = await db.insert(itineraries).values(insertItinerary).returning();
+    return itinerary;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getMessages(): Promise<Message[]> {
+    return await db.select().from(messages).orderBy(messages.createdAt);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values(insertMessage).returning();
+    return message;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
